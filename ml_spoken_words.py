@@ -23,6 +23,7 @@ totaling 23.4 million 1-second spoken examples (over 6,000 hours).
 
 
 import csv
+import os.path
 from functools import partial
 
 import datasets
@@ -55,10 +56,10 @@ _LICENSE = "CC-BY 4.0."
 
 _VERSION = datasets.Version("1.0.0")
 
-_BASE_URL = "https://huggingface.co/datasets/polinaeterna/ml_spoken_words/resolve/main/data/{lang}/"
-_AUDIO_URL = _BASE_URL + "{split}/audio/{n}.tar.gz"
-_SPLITS_URL = _BASE_URL + "splits.tar.gz"
-_N_FILES_URL = _BASE_URL + "{split}/n_files.txt"
+_BASE_URL = "https://huggingface.co/datasets/polinaeterna/ml_spoken_words/resolve/main/data/"
+_AUDIO_URL = _BASE_URL + "{format}/{lang}/{split}/audio/{n}.tar.gz"
+_N_FILES_URL = _BASE_URL + "{format}/{lang}/{split}/n_files.txt"
+_SPLITS_URL = _BASE_URL + "splits/{lang}/splits.tar.gz"
 
 _GENDERS = ["MALE", "FEMALE", "OTHER", "NAN"]
 
@@ -119,7 +120,7 @@ _LANGUAGES = [
 class MlSpokenWordsConfig(datasets.BuilderConfig):
     """BuilderConfig for MlSpokenWords."""
 
-    def __init__(self, *args, languages, **kwargs):
+    def __init__(self, *args, languages, format="wav", **kwargs):
         """BuilderConfig for MlSpokenWords.
         Args:
             languages (:obj:`Union[List[str], str]`): language or list of languages to load
@@ -127,10 +128,11 @@ class MlSpokenWordsConfig(datasets.BuilderConfig):
         """
         super().__init__(
             *args,
-            name="+".join(languages) if isinstance(languages, list) else languages,
+            name="+".join(languages) + "_" + format if isinstance(languages, list) else languages + "_" + format,
             **kwargs,
         )
         self.languages = languages if isinstance(languages, list) else [languages]
+        self.format = format
 
 
 class MlSpokenWords(datasets.GeneratorBasedBuilder):
@@ -143,7 +145,11 @@ class MlSpokenWords(datasets.GeneratorBasedBuilder):
     """
 
     VERSION = _VERSION
-    BUILDER_CONFIGS = [MlSpokenWordsConfig(languages=[lang], version=_VERSION) for lang in _LANGUAGES]
+    BUILDER_CONFIGS = [
+        MlSpokenWordsConfig(languages=[lang], format="wav", version=_VERSION) for lang in _LANGUAGES
+    ] + [
+        MlSpokenWordsConfig(languages=[lang], format="opus", version=_VERSION) for lang in _LANGUAGES
+    ]
     BUILDER_CONFIG_CLASS = MlSpokenWordsConfig
 
     def _info(self):
@@ -154,8 +160,9 @@ class MlSpokenWords(datasets.GeneratorBasedBuilder):
                 "language": datasets.ClassLabel(names=self.config.languages),
                 "speaker_id": datasets.Value("string"),
                 "gender": datasets.ClassLabel(names=_GENDERS),
-                "keyword": datasets.Value("string"),  # seems that there are too many of them (340k unique keywords)
-                "audio": datasets.Audio(sampling_rate=48_000),
+                "keyword": datasets.Value("string"),  # 340k unique keywords
+                "audio": datasets.Audio(sampling_rate=48_000) if self.config.format == "opus" \
+                    else datasets.Audio(sampling_rate=16_000),
             }
         )
         return datasets.DatasetInfo(
@@ -168,7 +175,7 @@ class MlSpokenWords(datasets.GeneratorBasedBuilder):
 
     def _split_generators(self, dl_manager):
         splits_archive_path = [dl_manager.download(_SPLITS_URL.format(lang=lang)) for lang in self.config.languages]
-        download_audio = partial(_download_audio_archives, dl_manager=dl_manager)
+        download_audio = partial(_download_audio_archives, format=self.config.format, dl_manager=dl_manager)
 
         return [
             datasets.SplitGenerator(
@@ -206,8 +213,8 @@ class MlSpokenWords(datasets.GeneratorBasedBuilder):
                     for i, (link, word, is_valid, speaker, gender) in enumerate(csv_reader):
                         if i == 0:
                             continue
-                        audio_filename = "_".join(link.split("/"))
-                        metadata[audio_filename] = {
+                        audio_id, audio_ext = os.path.splitext("_".join(link.split("/")))
+                        metadata[audio_id] = {
                             "keyword": word,
                             "is_valid": is_valid,
                             "speaker_id": speaker,
@@ -216,15 +223,16 @@ class MlSpokenWords(datasets.GeneratorBasedBuilder):
 
             for audio_archive in audio_archives[lang_idx]:
                 for audio_filename, audio_file in audio_archive:
+                    audio_id, audio_ext = os.path.splitext(audio_filename)
                     yield audio_filename, {
                         "file": audio_filename,
                         "language": lang,
                         "audio": {"path": audio_filename, "bytes": audio_file.read()},
-                        **metadata[audio_filename],
+                        **metadata[audio_id],
                     }
 
 
-def _download_audio_archives(dl_manager, lang, split):
+def _download_audio_archives(dl_manager, lang, format, split):
     """
     All audio files are stored in several .tar.gz archives with names like 0.tar.gz, 1.tar.gz, ...
     Number of archives stored in a separate .txt file (n_files.txt)
@@ -232,13 +240,13 @@ def _download_audio_archives(dl_manager, lang, split):
     Prepare all the audio archives for iterating over them and their audio files.
     """
 
-    n_files_url = _N_FILES_URL.format(lang=lang, split=split)
+    n_files_url = _N_FILES_URL.format(lang=lang, format=format, split=split)
     n_files_path = dl_manager.download(n_files_url)
 
     with open(n_files_path, "r", encoding="utf-8") as file:
         n_files = int(file.read().strip())  # the file contains a number of archives
 
-    archive_urls = [_AUDIO_URL.format(lang=lang, split=split, n=i) for i in range(n_files)]
+    archive_urls = [_AUDIO_URL.format(lang=lang, format=format, split=split, n=i) for i in range(n_files)]
     archive_paths = dl_manager.download(archive_urls)
 
     return [dl_manager.iter_archive(archive_path) for archive_path in archive_paths]
