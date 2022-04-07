@@ -120,7 +120,7 @@ Data is provided in two formats: `wav` (16KHz) and `opus` (48KHz). To download a
 argument (default format is `wav`):
 
 ```python
-ds = load_dataset("datasets/ml_spoken_words", languages="tt", format="opus")
+ds = load_dataset("polinaeterna/ml_spoken_words", languages="tt", format="opus")
 ```
 
 ### Supported Tasks and Leaderboards
@@ -133,7 +133,7 @@ The dataset is multilingual. To specify several languages to download pass a lis
 `languages` argument:
 
 ```python
-ds = load_dataset("datasets/ml_spoken_words", languages=["ar", "tt", "br"])
+ds = load_dataset("polinaeterna/ml_spoken_words", languages=["ar", "tt", "br"])
 ```
 
 The dataset contains data for the following languages:
