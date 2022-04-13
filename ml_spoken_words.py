@@ -56,7 +56,7 @@ _LICENSE = "CC-BY 4.0."
 
 _VERSION = datasets.Version("1.0.0")
 
-_BASE_URL = "https://huggingface.co/datasets/polinaeterna/ml_spoken_words/resolve/main/data/"
+_BASE_URL = "data/"
 _AUDIO_URL = _BASE_URL + "{format}/{lang}/{split}/audio/{n}.tar.gz"
 _N_FILES_URL = _BASE_URL + "{format}/{lang}/{split}/n_files.txt"
 _SPLITS_URL = _BASE_URL + "splits/{lang}/splits.tar.gz"
