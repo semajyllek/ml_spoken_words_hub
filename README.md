@@ -120,17 +120,17 @@ Data is provided in two formats: `wav` (16KHz) and `opus` (48KHz). Default confi
 `"{lang}_{format}"`, so to load, for example, Tatar in wav format do:
 
 ```python
-ds = load_dataset("polinaeterna/ml_spoken_words", "tt_wav")
+ds = load_dataset("MLCommons/ml_spoken_words", "tt_wav")
 ```
 
 To download multiple languages in a single dataset pass list of languages to `languages` argument:
 ```python
-ds = load_dataset("polinaeterna/ml_spoken_words", languages=["ar", "tt", "br"])
+ds = load_dataset("MLCommons/ml_spoken_words", languages=["ar", "tt", "br"])
 ```
 
 To download a specific format pass it to the `format` argument (default format is `wav`):
 ```python
-ds = load_dataset("polinaeterna/ml_spoken_words", languages=["ar", "tt", "br"], format="opus")
+ds = load_dataset("MLCommons/ml_spoken_words", languages=["ar", "tt", "br"], format="opus")
 ```
 Note that each time you provide different sets of languages, 
 examples are generated from scratch even if you already provided one or several of them before 
@@ -146,7 +146,7 @@ The dataset is multilingual. To specify several languages to download pass a lis
 `languages` argument:
 
 ```python
-ds = load_dataset("polinaeterna/ml_spoken_words", languages=["ar", "tt", "br"])
+ds = load_dataset("MLCommons/ml_spoken_words", languages=["ar", "tt", "br"])
 ```
 
 The dataset contains data for the following languages:
