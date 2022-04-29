@@ -175,13 +175,16 @@ class MlSpokenWords(datasets.GeneratorBasedBuilder):
 
     def _split_generators(self, dl_manager):
         splits_archive_path = [dl_manager.download(_SPLITS_URL.format(lang=lang)) for lang in self.config.languages]
-        download_audio = partial(_download_audio_archives, format=self.config.format, dl_manager=dl_manager)
+        download_audio = partial(_download_audio_archives, dl_manager=dl_manager, format=self.config.format)
+        download_extract_audio = partial(_download_extract_audio_archives, dl_manager=dl_manager, format=self.config.format)
 
         return [
             datasets.SplitGenerator(
                 name=datasets.Split.TRAIN,
                 gen_kwargs={
                     "audio_archives": [download_audio(split="train", lang=lang) for lang in self.config.languages],
+                    "local_audio_archives_paths": [download_extract_audio(split="train", lang=lang) for lang in
+                                                   self.config.languages] if not dl_manager.is_streaming else None,
                     "splits_archives": [dl_manager.iter_archive(path) for path in splits_archive_path],
                     "split": "train",
                 },
@@ -190,6 +193,8 @@ class MlSpokenWords(datasets.GeneratorBasedBuilder):
                 name=datasets.Split.VALIDATION,
                 gen_kwargs={
                     "audio_archives": [download_audio(split="dev", lang=lang) for lang in self.config.languages],
+                    "local_audio_archives_paths": [download_extract_audio(split="dev", lang=lang) for lang in
+                                                   self.config.languages] if not dl_manager.is_streaming else None,
                     "splits_archives": [dl_manager.iter_archive(path) for path in splits_archive_path],
                     "split": "dev",
                 },
@@ -198,13 +203,15 @@ class MlSpokenWords(datasets.GeneratorBasedBuilder):
                 name=datasets.Split.TEST,
                 gen_kwargs={
                     "audio_archives": [download_audio(split="test", lang=lang) for lang in self.config.languages],
+                    "local_audio_archives_paths": [download_extract_audio(split="test", lang=lang) for lang in
+                                                   self.config.languages] if not dl_manager.is_streaming else None,
                     "splits_archives": [dl_manager.iter_archive(path) for path in splits_archive_path],
                     "split": "test",
                 },
             ),
         ]
 
-    def _generate_examples(self, audio_archives, splits_archives, split):
+    def _generate_examples(self, audio_archives, local_audio_archives_paths, splits_archives, split):
         metadata = dict()
         for lang_idx, lang in enumerate(self.config.languages):
             for split_filename, split_file in splits_archives[lang_idx]:
@@ -221,18 +228,19 @@ class MlSpokenWords(datasets.GeneratorBasedBuilder):
                             "gender": gender if gender and gender != "NA" else "NAN",  # some values are "NA"
                         }
 
-            for audio_archive in audio_archives[lang_idx]:
+            for archive_idx, audio_archive in enumerate(audio_archives[lang_idx]):
                 for audio_filename, audio_file in audio_archive:
                     audio_id, audio_ext = os.path.splitext(audio_filename)
+                    path = os.path.join(local_audio_archives_paths[lang_idx][archive_idx], audio_filename) if local_audio_archives_paths else audio_filename
                     yield audio_filename, {
-                        "file": audio_filename,
+                        "file": path if local_audio_archives_paths else None,
                         "language": lang,
-                        "audio": {"path": audio_filename, "bytes": audio_file.read()},
+                        "audio": {"path": path, "bytes": audio_file.read()},
                         **metadata[audio_id],
                     }
 
 
-def _download_audio_archives(dl_manager, lang, format, split):
+def _download_audio_archives_paths(dl_manager, lang, format, split):
     """
     All audio files are stored in several .tar.gz archives with names like 0.tar.gz, 1.tar.gz, ...
     Number of archives stored in a separate .txt file (n_files.txt)
@@ -247,6 +255,17 @@ def _download_audio_archives(dl_manager, lang, format, split):
         n_files = int(file.read().strip())  # the file contains a number of archives
 
     archive_urls = [_AUDIO_URL.format(lang=lang, format=format, split=split, n=i) for i in range(n_files)]
-    archive_paths = dl_manager.download(archive_urls)
 
-    return [dl_manager.iter_archive(archive_path) for archive_path in archive_paths]
+    return dl_manager.download(archive_urls)
+
+
+# for default, non-streaming case
+def _download_extract_audio_archives(dl_manager, lang, format, split):
+    archives_paths = _download_audio_archives_paths(dl_manager, lang, format, split)
+    return [dl_manager.extract(archive_path) for archive_path in archives_paths]
+
+
+# for streaming case
+def _download_audio_archives(dl_manager, lang, format, split):
+    archives_paths = _download_audio_archives_paths(dl_manager, lang, format, split)
+    return [dl_manager.iter_archive(archive_path) for archive_path in archives_paths]
