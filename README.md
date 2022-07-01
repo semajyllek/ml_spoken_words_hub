@@ -3,7 +3,7 @@ annotations_creators:
 - machine-generated
 language_creators:
 - other
-languages:
+language:
 - ar
 - as
 - br
@@ -54,7 +54,7 @@ languages:
 - uk
 - vi
 - zh-CN
-licenses:
+license:
 - cc-by-4.0
 multilinguality:
 - multilingual
@@ -149,7 +149,7 @@ The dataset is multilingual. To specify several languages to download pass a lis
 ds = load_dataset("MLCommons/ml_spoken_words", languages=["ar", "tt", "br"])
 ```
 
-The dataset contains data for the following languages:
+The dataset contains data for the following language:
 
 Low-resourced (<10 hours):
 * Arabic (0.1G, 7.6h)
