@@ -120,14 +120,13 @@ _LANGUAGES = [
 class MlSpokenWordsConfig(datasets.BuilderConfig):
     """BuilderConfig for MlSpokenWords."""
 
-    def __init__(self, *args, languages, format="wav", **kwargs):
+    def __init__(self, languages, format="wav", **kwargs):
         """BuilderConfig for MlSpokenWords.
         Args:
             languages (:obj:`Union[List[str], str]`): language or list of languages to load
             **kwargs: keyword arguments forwarded to super.
         """
         super().__init__(
-            *args,
             name="+".join(languages) + "_" + format if isinstance(languages, list) else languages + "_" + format,
             **kwargs,
         )
