@@ -22,8 +22,8 @@ language:
 - eu
 - fa
 - fr
-- fy-NL
-- ga-IE
+- fy
+- ga
 - gn
 - ha
 - ia
@@ -39,20 +39,26 @@ language:
 - or
 - pl
 - pt
-- rm-sursilv
-- rm-vallader
+- rm
 - ro
 - ru
 - rw
 - sah
 - sk
 - sl
-- sv-SE
+- sv
 - ta
 - tr
 - tt
 - uk
 - vi
+- zh
+language_bcp47:
+- fy-NL
+- ga-IE
+- rm-sursilv
+- rm-vallader
+- sv-SE
 - zh-CN
 license:
 - cc-by-4.0
