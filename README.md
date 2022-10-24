@@ -53,6 +53,18 @@ language:
 - uk
 - vi
 - zh
+license:
+- cc-by-4.0
+multilinguality:
+- multilingual
+size_categories:
+- 10M<n<100M
+source_datasets:
+- extended|common_voice
+task_categories:
+- speech-processing
+task_ids: []
+pretty_name: Multilingual Spoken Words
 language_bcp47:
 - fy-NL
 - ga-IE
@@ -60,19 +72,8 @@ language_bcp47:
 - rm-vallader
 - sv-SE
 - zh-CN
-license:
-- cc-by-4.0
-multilinguality:
-- multilingual
-pretty_name: Multilingual Spoken Words
-size_categories:
-- 10M<n<100M
-source_datasets:
-- extended|common_voice
-task_categories:
-- speech-processing
-task_ids:
-- other-other-keyword-spotting
+tags:
+- other-keyword-spotting
 ---
 
 # Dataset Card for Multilingual Spoken Words
