@@ -62,7 +62,7 @@ size_categories:
 source_datasets:
 - extended|common_voice
 task_categories:
-- speech-processing
+- audio-classification
 task_ids: []
 pretty_name: Multilingual Spoken Words
 language_bcp47:
