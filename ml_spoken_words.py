@@ -26,6 +26,8 @@ import csv
 import os.path
 from functools import partial
 
+
+from typing import Set, Optional
 import datasets
 
 
@@ -120,7 +122,7 @@ _LANGUAGES = [
 class MlSpokenWordsConfig(datasets.BuilderConfig):
     """BuilderConfig for MlSpokenWords."""
 
-    def __init__(self, languages, format="wav", **kwargs):
+    def __init__(self, languages, format="wav", file_n=None, **kwargs):
         """BuilderConfig for MlSpokenWords.
         Args:
             languages (:obj:`Union[List[str], str]`): language or list of languages to load
@@ -132,6 +134,7 @@ class MlSpokenWordsConfig(datasets.BuilderConfig):
         )
         self.languages = languages if isinstance(languages, list) else [languages]
         self.format = format
+        self.file_n = file_n
 
 
 class MlSpokenWords(datasets.GeneratorBasedBuilder):
@@ -239,7 +242,7 @@ class MlSpokenWords(datasets.GeneratorBasedBuilder):
                     }
 
 
-def _download_audio_archives_paths(dl_manager, lang, format, split):
+def _download_audio_archives_paths(dl_manager, lang, format, split, file_n: Optional[Set[int]]=None):
     """
     All audio files are stored in several .tar.gz archives with names like 0.tar.gz, 1.tar.gz, ...
     Number of archives stored in a separate .txt file (n_files.txt)
@@ -253,18 +256,22 @@ def _download_audio_archives_paths(dl_manager, lang, format, split):
     with open(n_files_path, "r", encoding="utf-8") as file:
         n_files = int(file.read().strip())  # the file contains a number of archives
 
-    archive_urls = [_AUDIO_URL.format(lang=lang, format=format, split=split, n=i) for i in range(n_files)]
+    archive_urls = []
+    for i in range(n_files):
+        if file_n is None or i in file_n:
+            archive_urls.append(_AUDIO_URL.format(lang=lang, format=format, split=split, n=i))
+   
 
     return dl_manager.download(archive_urls)
 
 
 # for default, non-streaming case
-def _download_extract_audio_archives(dl_manager, lang, format, split):
-    archives_paths = _download_audio_archives_paths(dl_manager, lang, format, split)
+def _download_extract_audio_archives(dl_manager, lang, format, split, file_n):
+    archives_paths = _download_audio_archives_paths(dl_manager, lang, format, split, file_n)
     return [dl_manager.extract(archive_path) for archive_path in archives_paths]
 
 
 # for streaming case
-def _download_audio_archives(dl_manager, lang, format, split):
-    archives_paths = _download_audio_archives_paths(dl_manager, lang, format, split)
+def _download_audio_archives(dl_manager, lang, format, split, file_n):
+    archives_paths = _download_audio_archives_paths(dl_manager, lang, format, split, file_n)
     return [dl_manager.iter_archive(archive_path) for archive_path in archives_paths]
